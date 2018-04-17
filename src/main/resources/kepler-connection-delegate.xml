@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util" xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+    http://www.springframework.org/schema/util
+	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+	<import resource="kepler-connection-delegate-location.xml" />
+	<import resource="kepler-connection-delegate-guard.xml" />
+
+	<bean id="kepler.connection.delegate" class="com.kepler.connection.delegate.impl.Delegate" init-method="init" destroy-method="destroy">
+		<constructor-arg ref="kepler.connection.delegate.hosts" />
+		<constructor-arg ref="kepler.connection.location" />
+		<constructor-arg ref="kepler.connection.guard" />
+		<constructor-arg ref="kepler.host.local" />
+	</bean>
+
+	<bean id="kepler.connection.delegate.hosts" class="com.kepler.connection.delegate.impl.DelegateHosts" destroy-method="destroy">
+		<constructor-arg ref="kepler.service.exported.context" />
+		<constructor-arg ref="kepler.service.exported.chained" />
+		<constructor-arg ref="kepler.router.routings" />
+	</bean>
+
+</beans>
