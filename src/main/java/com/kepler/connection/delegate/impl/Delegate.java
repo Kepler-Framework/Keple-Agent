@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.kepler.config.PropertiesUtils;
-import com.kepler.connection.RespStatus;
+import com.kepler.connection.ResponseStatus;
 import com.kepler.connection.agent.impl.DefaultAgent;
 import com.kepler.connection.delegate.DelegateGuard;
 import com.kepler.connection.delegate.DelegateHost;
@@ -95,7 +95,7 @@ public class Delegate implements Runnable {
 			Delegate.LOGGER.info("[install][location=" + location + "]");
 			try (InputStream input = this.connection(location).getInputStream()) {
 				DelegateResp resp = this.mapper.readValue(input, DelegateResp.class);
-				if (RespStatus.SUCCESS.code() == resp.getErrno() && this.guard.guard(location, resp.getData())) {
+				if (ResponseStatus.SUCCESS.code() == resp.getErrno() && this.guard.guard(location, resp.getData())) {
 					this.hosts.add(this.diffe.add(new DelegateHost(resp.getData())), new DelegateServices(resp.getData()));
 				}
 			} catch (Exception e) {

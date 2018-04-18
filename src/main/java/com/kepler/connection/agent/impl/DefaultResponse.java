@@ -1,14 +1,14 @@
 package com.kepler.connection.agent.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.kepler.connection.RespStatus;
+import com.kepler.connection.ResponseStatus;
 
 /**
  * @author KimShen
  *
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DefaultResp {
+public class DefaultResponse {
 
 	private final String errmsg;
 
@@ -18,20 +18,20 @@ public class DefaultResp {
 
 	private final int errno;
 
-	public DefaultResp(Throwable exception, String trace) {
+	public DefaultResponse(Throwable exception, String trace) {
 		super();
 		this.data = null;
 		this.trace = trace;
 		this.errmsg = exception.getMessage();
-		this.errno = RespStatus.FAILED.code();
+		this.errno = ResponseStatus.FAILED.code();
 	}
 
-	public DefaultResp(Object response, String trace) {
+	public DefaultResponse(Object response, String trace) {
 		super();
 		this.errmsg = null;
 		this.trace = trace;
 		this.data = response;
-		this.errno = RespStatus.SUCCESS.code();
+		this.errno = ResponseStatus.SUCCESS.code();
 	}
 
 	public String getErrmsg() {

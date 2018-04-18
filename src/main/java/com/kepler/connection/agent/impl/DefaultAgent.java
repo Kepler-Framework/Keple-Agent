@@ -1,31 +1,22 @@
 package com.kepler.connection.agent.impl;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.kepler.config.PropertiesUtils;
-import com.kepler.connection.agent.RespFactory;
+import com.kepler.connection.agent.Request;
+import com.kepler.connection.agent.RequestFactory;
+import com.kepler.connection.agent.ResponseFactory;
 import com.kepler.connection.impl.DefaultChannelFactory;
 import com.kepler.connection.impl.ExceptionListener;
-import com.kepler.connection.stream.WrapInputStream;
+import com.kepler.connection.json.Json;
 import com.kepler.connection.stream.WrapOutputStream;
 import com.kepler.generic.reflect.GenericService;
 import com.kepler.header.HeadersContext;
 import com.kepler.header.impl.TraceContext;
-import com.kepler.service.Service;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -73,25 +64,13 @@ public class DefaultAgent {
 
 	private static final int MAX_CHUNK = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".max_chunk", Integer.MAX_VALUE);
 
-	private static final String FIELD_CLASSES = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".field_classes", "classes");
-
-	private static final String FIELD_METHOD = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".field_method", "method");
-
-	private static final String FIELD_ARGS = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".field_args", "args");
-
-	private static final String BINDING = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".binding", "0.0.0.0");
+	private static final String BINDING = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".bind", "0.0.0.0");
 
 	private static final boolean POOLED = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".pooled", true);
 
 	private static final int PORT = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".port", 8080);
 
-	private static final Map<String, Object> EMPTY_CONTENT = new HashMap<String, Object>();
-
 	private static final Log LOGGER = LogFactory.getLog(DefaultAgent.class);
-
-	private static final String[] EMPTY_CLASSES = new String[] {};
-
-	private static final Object[] EMPTY_ARGS = new Object[] {};
 
 	private final ByteBufAllocator allocator = DefaultAgent.POOLED ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
 
@@ -101,29 +80,25 @@ public class DefaultAgent {
 
 	private final RequestHandler handler = new RequestHandler();
 
-	private final ObjectMapper mapper = new ObjectMapper();
-
 	private final ThreadPoolExecutor executor;
 
 	private final HeadersContext headers;
 
 	private final GenericService generic;
 
-	private final ObjectWriter writer;
+	private final ResponseFactory resp;
 
-	private final ObjectReader reader;
+	private final RequestFactory resq;
 
-	private final RespFactory resp;
+	private final Json json;
 
-	public DefaultAgent(ThreadPoolExecutor executor, HeadersContext headers, GenericService generic, RespFactory resp) {
-		this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		this.mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-		this.writer = this.mapper.writerWithType(DefaultResp.class);
-		this.reader = this.mapper.reader(Map.class);
+	public DefaultAgent(ThreadPoolExecutor executor, GenericService generic, HeadersContext headers, ResponseFactory resp, RequestFactory resq, Json json) {
 		this.executor = executor;
 		this.generic = generic;
 		this.headers = headers;
 		this.resp = resp;
+		this.resq = resq;
+		this.json = json;
 	}
 
 	/**
@@ -208,6 +183,8 @@ public class DefaultAgent {
 
 		private final FullHttpRequest req;
 
+		private Request request;
+
 		private ByteBuf buf;
 
 		private InvokeRunnable(ChannelHandlerContext ctx, FullHttpRequest req) {
@@ -222,8 +199,7 @@ public class DefaultAgent {
 		 * @throws Exception
 		 */
 		private FullHttpResponse response(Object response) throws Exception {
-			try (WrapOutputStream output = new WrapOutputStream(this.buf)) {
-				DefaultAgent.this.writer.writeValue(output, response);
+			try (WrapOutputStream output = WrapOutputStream.class.cast(DefaultAgent.this.json.write(new WrapOutputStream(this.buf), response))) {
 				DefaultFullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, output.buffer());
 				res.headers().add(HttpHeaders.CONTENT_LENGTH, output.buffer().readableBytes());
 				res.headers().add(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8");
@@ -232,9 +208,14 @@ public class DefaultAgent {
 			}
 		}
 
-		private InvokeRunnable allocate() {
+		private InvokeRunnable prepare() throws Exception {
+			this.request = DefaultAgent.this.resq.factory(this.req);
 			this.buf = DefaultAgent.this.allocator.buffer();
 			return this;
+		}
+
+		private ExceptionListener listener() {
+			return ExceptionListener.listener(this.ctx, TraceContext.getTraceOnCreate());
 		}
 
 		private InvokeRunnable release() {
@@ -253,78 +234,27 @@ public class DefaultAgent {
 			return this;
 		}
 
+		private void running() throws Exception {
+			try {
+				Object response = this.response(DefaultAgent.this.resp.response(this.request.service(), DefaultAgent.this.generic.invoke(this.request.service(), this.request.method(), this.request.classes(), this.request.args())));
+				this.ctx.writeAndFlush(response).addListener(this.listener());
+			} catch (Throwable e) {
+				Object response = this.reset().response(DefaultAgent.this.resp.throwable(this.request.service(), e));
+				this.ctx.writeAndFlush(response).addListener(this.listener());
+			}
+		}
+
 		@Override
 		public void run() {
 			try {
-				HttpRequest request = new HttpRequest(this.allocate().req);
-				try (WrapInputStream input = new WrapInputStream(request.buffer())) {
-					Object resp = DefaultAgent.this.resp.resp(request.service(), DefaultAgent.this.generic.invoke(request.service(), request.method(), request.classes(), request.args()));
-					this.ctx.writeAndFlush(this.response(resp)).addListener(ExceptionListener.listener(this.ctx, TraceContext.getTraceOnCreate()));
-				}
-			} catch (Throwable root) {
-				try {
-					this.ctx.writeAndFlush(this.reset().response(new DefaultResp(root, TraceContext.getTraceOnCreate()))).addListener(ExceptionListener.listener(this.ctx, TraceContext.getTraceOnCreate()));
-				} catch (Throwable inner) {
-					this.release();
-				}
+				this.prepare();
+				this.running();
+			} catch (Throwable e) {
+				DefaultAgent.LOGGER.error(e.getMessage(), e);
+				this.release();
 			} finally {
 				DefaultAgent.this.headers.release();
 			}
-		}
-	}
-
-	private class HttpRequest {
-
-		private final Map<String, Object> content;
-
-		private final FullHttpRequest request;
-
-		private final URI uri;
-
-		@SuppressWarnings("unchecked")
-		private HttpRequest(FullHttpRequest request) throws Exception {
-			super();
-			try (WrapInputStream input = new WrapInputStream(request.content())) {
-				this.content = input.available() > 0 ? Map.class.cast(DefaultAgent.this.reader.readValue(input)) : DefaultAgent.EMPTY_CONTENT;
-				this.uri = new URI((this.request = request).getUri());
-				this.headers(this.uri);
-			}
-		}
-
-		private HttpRequest headers(URI uri) throws Exception {
-			if (!StringUtils.isEmpty(uri.getQuery())) {
-				// 填充URL Query
-				for (String meta : uri.getQuery().split("&")) {
-					String[] pair = meta.split("=");
-					DefaultAgent.this.headers.get().put(pair[0], pair[1]);
-				}
-			}
-			return this;
-		}
-
-		public String[] classes() throws Exception {
-			@SuppressWarnings("unchecked")
-			List<String> clazz = List.class.cast(this.content.get(DefaultAgent.FIELD_CLASSES));
-			return clazz != null ? clazz.toArray(new String[] {}) : DefaultAgent.EMPTY_CLASSES;
-		}
-
-		public Service service() throws Exception {
-			String[] service = this.uri.getPath().split("/");
-			return service.length >= 4 ? new Service(service[1], service[2], service[3]) : new Service(service[1], service[2]);
-		}
-
-		public ByteBuf buffer() throws Exception {
-			return this.request.content();
-		}
-
-		public String method() throws Exception {
-			return String.class.cast(this.content.get(DefaultAgent.FIELD_METHOD));
-		}
-
-		public Object[] args() throws Exception {
-			@SuppressWarnings("unchecked")
-			List<Object> args = List.class.cast(this.content.get(DefaultAgent.FIELD_ARGS));
-			return args != null ? args.toArray(new Object[] {}) : DefaultAgent.EMPTY_ARGS;
 		}
 	}
 }

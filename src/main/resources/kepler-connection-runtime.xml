@@ -4,8 +4,9 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<alias name="kepler.connection.agent.resp.dynamic" alias="kepler.connection.agent.resp" />
-
-	<bean id="kepler.connection.agent.resp.dynamic" class="com.kepler.connection.agent.impl.DynamicFactory" />
+	<import resource="classpath:kepler-connection-delegate.xml" />
+	<import resource="classpath:kepler-connection-agent.xml" />
+	<import resource="classpath:kepler-connection-json.xml" />
+	<import resource="classpath:kepler-server.xml" />
 
 </beans>
