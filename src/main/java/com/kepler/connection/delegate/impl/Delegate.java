@@ -3,7 +3,11 @@ package com.kepler.connection.delegate.impl;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,6 +29,7 @@ import com.kepler.connection.delegate.DelegateServices;
 import com.kepler.connection.location.DelegateLocation;
 import com.kepler.connection.location.impl.ArgLocation;
 import com.kepler.host.Host;
+import com.kepler.service.Service;
 
 /**
  * @author KimShen
@@ -40,7 +45,7 @@ public class Delegate implements Runnable {
 
 	private static final int TIMEOUT_READ = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".timeout_read", 5000);
 
-	private static final int INTERVAL = PropertiesUtils.get(Delegate.class.getName().toLowerCase() + ".interval", 60000);
+	private static final int INTERVAL = PropertiesUtils.get(Delegate.class.getName().toLowerCase() + ".interval", 20000);
 
 	private static final int DELAY = PropertiesUtils.get(Delegate.class.getName().toLowerCase() + ".delay", 10000);
 
@@ -81,8 +86,10 @@ public class Delegate implements Runnable {
 
 	private Delegate uninstall() throws Exception {
 		try {
-			// 卸载节点
-			this.hosts.ban(this.diffe.diff());
+			Map<Host, Set<Service>> services = this.diffe.diff();
+			for (Host host : services.keySet()) {
+				this.hosts.ban(host, new ArrayList<Service>(services.get(host)));
+			}
 			return this;
 		} catch (Exception e) {
 			Delegate.LOGGER.error(e.getMessage(), e);
@@ -96,7 +103,8 @@ public class Delegate implements Runnable {
 			try (InputStream input = this.connection(location).getInputStream()) {
 				DelegateResp resp = this.mapper.readValue(input, DelegateResp.class);
 				if (ResponseStatus.SUCCESS.code() == resp.getErrno() && this.guard.guard(location, resp.getData())) {
-					this.hosts.add(this.diffe.add(new DelegateHost(resp.getData())), new DelegateServices(resp.getData()));
+					List<Service> services = new DelegateServices(resp.getData());
+					this.hosts.add(this.diffe.add(new DelegateHost(resp.getData()), services), services);
 				}
 			} catch (Exception e) {
 				Delegate.LOGGER.error("[location=" + location + "][message=" + e.getMessage() + "]", e);
@@ -131,20 +139,28 @@ public class Delegate implements Runnable {
 
 	private class Diffenence {
 
-		private Set<Host> prev = new HashSet<Host>();
+		private Map<Host, Set<Service>> curr = new HashMap<Host, Set<Service>>();
 
-		private Set<Host> curr = new HashSet<Host>();
+		private Map<Host, Set<Service>> prev = new HashMap<Host, Set<Service>>();
 
-		public Host add(Host host) {
-			this.prev.remove(host);
-			this.curr.add(host);
+		public Host add(Host host, List<Service> services) {
+			Set<Service> pres = this.prev.get(host);
+			if (pres != null) {
+				pres.removeAll(services);
+			}
+			Set<Service> curs = this.curr.get(host);
+			if (curs == null) {
+				this.curr.put(host, new HashSet<Service>(services));
+			} else {
+				curs.addAll(services);
+			}
 			return host;
 		}
 
-		public Set<Host> diff() {
-			Set<Host> diff = this.prev;
+		public Map<Host, Set<Service>> diff() {
+			Map<Host, Set<Service>> diff = this.prev;
 			this.prev = this.curr;
-			this.curr = new HashSet<Host>();
+			this.curr = new HashMap<Host, Set<Service>>();
 			return diff;
 		}
 	}

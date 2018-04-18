@@ -36,8 +36,10 @@ public class DynamicResponseFactory implements ResponseFactory, ApplicationConte
 		if (names != null) {
 			for (String name : names) {
 				try {
-					ResponseProcessor handler = context.getBean(name, ResponseProcessor.class);
-					this.processor.put(handler.support(), handler);
+					ResponseProcessor processor = context.getBean(name, ResponseProcessor.class);
+					if (processor != this.def) {
+						this.processor.put(processor.support(), processor);
+					}
 				} catch (Exception e) {
 					DynamicResponseFactory.LOGGER.error(e.getMessage(), e);
 				}

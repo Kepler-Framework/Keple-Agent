@@ -18,7 +18,7 @@ public class AvailableGuard implements DelegateGuard {
 	@Override
 	public boolean guard(String location, DelegateBody body) {
 		if (StringUtils.isEmpty(body.getRoot())) {
-			AvailableGuard.LOGGER.warn("[guard-host][location=" + location + "]");
+			AvailableGuard.LOGGER.warn("[available-host][location=" + location + "]");
 			return false;
 		}
 		return true;

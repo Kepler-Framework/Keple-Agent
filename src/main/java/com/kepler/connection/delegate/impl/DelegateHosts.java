@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,8 +31,6 @@ public class DelegateHosts {
 
 	volatile private Map<Service, List<Host>> current = new HashMap<Service, List<Host>>();
 
-	private final Map<Host, List<Service>> services = new HashMap<Host, List<Service>>();
-
 	private final ExportedServices context;
 
 	private final DelegateInvoker invoker;
@@ -51,8 +48,8 @@ public class DelegateHosts {
 	}
 
 	public DelegateHosts add(Host host, List<Service> services) throws Exception {
-		this.services.put(host, services);
 		for (Service service : services) {
+			// 发布服务
 			if (!this.context.services().containsKey(service)) {
 				this.exported.export(service, this.invoker);
 			}
@@ -67,15 +64,7 @@ public class DelegateHosts {
 		return this;
 	}
 
-	public DelegateHosts ban(Set<Host> hosts) throws Exception {
-		for (Host host : hosts) {
-			this.ban(host);
-		}
-		return this;
-	}
-
-	public DelegateHosts ban(Host host) throws Exception {
-		List<Service> services = this.services.remove(host);
+	public DelegateHosts ban(Host host, List<Service> services) throws Exception {
 		if (services == null) {
 			return this;
 		}
@@ -93,13 +82,12 @@ public class DelegateHosts {
 				if (this.context.services().containsKey(service)) {
 					this.exported.logout(service);
 				}
-				this.services.remove(service);
 				DelegateHosts.LOGGER.info("[ban][service=" + service + "]");
 			}
 		}
 		return this;
 	}
-	
+
 	public void destroy() throws Exception {
 		this.invoker.destroy();
 	}

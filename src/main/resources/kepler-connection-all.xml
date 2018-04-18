@@ -4,7 +4,8 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<import resource="classpath:kepler-connection-all.xml" />
-	<import resource="classpath:kepler-server.xml" />
+	<import resource="classpath:kepler-connection-delegate.xml" />
+	<import resource="classpath:kepler-connection-agent.xml" />
+	<import resource="classpath:kepler-connection-json.xml" />
 
 </beans>

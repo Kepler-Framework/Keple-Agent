@@ -38,7 +38,10 @@ public class DynamicRequestFactory implements RequestFactory, ApplicationContext
 		if (names != null) {
 			for (String name : names) {
 				try {
-					this.processor.add(context.getBean(name, RequestProcessor.class));
+					RequestProcessor processor = context.getBean(name, RequestProcessor.class);
+					if (processor != this.def) {
+						this.processor.add(processor);
+					}
 				} catch (Exception e) {
 					DynamicRequestFactory.LOGGER.error(e.getMessage(), e);
 				}
