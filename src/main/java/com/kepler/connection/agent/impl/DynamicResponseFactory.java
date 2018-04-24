@@ -48,7 +48,17 @@ public class DynamicResponseFactory implements ResponseFactory, ApplicationConte
 	}
 
 	@Override
-	public Object throwable(Service service, Throwable throwable) throws Exception {
+	public Object response(Service service, Object resp) throws Exception {
+		try {
+			ResponseProcessor handler = this.processor.get(service);
+			return handler != null ? handler.response(resp) : this.def.response(resp);
+		} catch (Exception e) {
+			DynamicResponseFactory.LOGGER.error(e.getMessage(), e);
+			throw e;
+		}
+	}
+
+	public Object throwable(Service service, String throwable) throws Exception {
 		try {
 			ResponseProcessor handler = this.processor.get(service);
 			return handler != null ? handler.exception(throwable) : this.def.exception(throwable);
@@ -59,10 +69,10 @@ public class DynamicResponseFactory implements ResponseFactory, ApplicationConte
 	}
 
 	@Override
-	public Object response(Service service, Object resp) throws Exception {
+	public Object throwable(Service service, Throwable throwable) throws Exception {
 		try {
 			ResponseProcessor handler = this.processor.get(service);
-			return handler != null ? handler.response(resp) : this.def.response(resp);
+			return handler != null ? handler.exception(throwable) : this.def.exception(throwable);
 		} catch (Exception e) {
 			DynamicResponseFactory.LOGGER.error(e.getMessage(), e);
 			throw e;

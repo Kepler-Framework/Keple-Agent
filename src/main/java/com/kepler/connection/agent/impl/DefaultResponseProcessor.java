@@ -14,6 +14,10 @@ public class DefaultResponseProcessor implements ResponseProcessor {
 		return new DefaultResponse(throwable, TraceContext.getTraceOnCreate());
 	}
 
+	public Object exception(String throwable) throws Exception {
+		return new DefaultResponse(throwable, TraceContext.getTraceOnCreate());
+	}
+
 	@Override
 	public Object response(Object response) throws Exception {
 		return new DefaultResponse(response, TraceContext.getTraceOnCreate());
@@ -23,5 +27,4 @@ public class DefaultResponseProcessor implements ResponseProcessor {
 	public Service support() {
 		return null;
 	}
-
 }

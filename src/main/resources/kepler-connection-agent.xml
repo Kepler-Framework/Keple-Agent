@@ -5,12 +5,14 @@
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
 	<import resource="kepler-connection-agent-factory.xml" />
+	<import resource="kepler-connection-agent-guard.xml" />
 
 	<bean id="kepler.connection.agent" class="com.kepler.connection.agent.impl.DefaultAgent" init-method="init" destroy-method="destroy">
 		<constructor-arg ref="kepler.connection.agent.response" />
 		<constructor-arg ref="kepler.connection.agent.request" />
+		<constructor-arg ref="kepler.connection.agent.guard" />
 		<constructor-arg ref="kepler.connection.json" />
-		<constructor-arg ref="kepler.generic.reflect" />
+		<constructor-arg ref="kepler.generic.service" />
 		<constructor-arg ref="kepler.header.context" />
 		<constructor-arg ref="kepler.threads" />
 	</bean>

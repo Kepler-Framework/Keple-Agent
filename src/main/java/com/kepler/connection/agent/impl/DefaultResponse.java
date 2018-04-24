@@ -25,6 +25,14 @@ public class DefaultResponse {
 		this.errmsg = exception.getMessage();
 		this.errno = ResponseStatus.FAILED.code();
 	}
+	
+	public DefaultResponse(String exception, String trace) {
+		super();
+		this.data = null;
+		this.trace = trace;
+		this.errmsg = exception;
+		this.errno = ResponseStatus.FAILED.code();
+	}
 
 	public DefaultResponse(Object response, String trace) {
 		super();

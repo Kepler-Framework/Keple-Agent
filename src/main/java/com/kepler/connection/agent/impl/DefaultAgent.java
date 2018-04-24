@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import com.kepler.config.PropertiesUtils;
 import com.kepler.connection.agent.Request;
 import com.kepler.connection.agent.RequestFactory;
+import com.kepler.connection.agent.RequestGuard;
 import com.kepler.connection.agent.ResponseFactory;
 import com.kepler.connection.impl.DefaultChannelFactory;
 import com.kepler.connection.impl.ExceptionListener;
@@ -17,6 +18,7 @@ import com.kepler.connection.stream.WrapOutputStream;
 import com.kepler.generic.reflect.GenericService;
 import com.kepler.header.HeadersContext;
 import com.kepler.header.impl.TraceContext;
+import com.kepler.service.Service;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -90,12 +92,15 @@ public class DefaultAgent {
 
 	private final RequestFactory resq;
 
+	private final RequestGuard guard;
+
 	private final Json json;
 
-	public DefaultAgent(ThreadPoolExecutor executor, GenericService generic, HeadersContext headers, ResponseFactory resp, RequestFactory resq, Json json) {
+	public DefaultAgent(ThreadPoolExecutor executor, GenericService generic, HeadersContext headers, RequestGuard guard, ResponseFactory resp, RequestFactory resq, Json json) {
 		this.executor = executor;
 		this.generic = generic;
 		this.headers = headers;
+		this.guard = guard;
 		this.resp = resp;
 		this.resq = resq;
 		this.json = json;
@@ -209,9 +214,21 @@ public class DefaultAgent {
 		}
 
 		private InvokeRunnable prepare() throws Exception {
-			this.request = DefaultAgent.this.resq.factory(this.req);
-			this.buf = DefaultAgent.this.allocator.buffer();
-			return this;
+			try {
+				// 解析Request并准备Header
+				DefaultAgent.this.headers.get().put((this.request = DefaultAgent.this.resq.factory(this.req)).headers().headers());
+				this.buf = DefaultAgent.this.allocator.buffer();
+				return this;
+			} catch (Exception e) {
+				DefaultAgent.LOGGER.error(e.getMessage(), e);
+				throw e;
+			}
+		}
+
+		private Object generic() throws Throwable {
+			String method = this.request.method();
+			Service service = this.request.service();
+			return DefaultAgent.this.generic.invoke(service, method, this.request.body());
 		}
 
 		private ExceptionListener listener() {
@@ -236,7 +253,13 @@ public class DefaultAgent {
 
 		private void running() throws Exception {
 			try {
-				Object response = this.response(DefaultAgent.this.resp.response(this.request.service(), DefaultAgent.this.generic.invoke(this.request.service(), this.request.method(), this.request.classes(), this.request.args())));
+				// 请求校验
+				DefaultAgent.this.guard.guard(this.request);
+				Object respones_process = DefaultAgent.this.resp.response(this.request.service(), this.generic());
+				Object response_netty = this.response(respones_process);
+				this.ctx.writeAndFlush(response_netty).addListener(this.listener());
+			} catch (NullPointerException e) {
+				Object response = this.reset().response(DefaultAgent.this.resp.throwable(this.request.service(), "NPE"));
 				this.ctx.writeAndFlush(response).addListener(this.listener());
 			} catch (Throwable e) {
 				Object response = this.reset().response(DefaultAgent.this.resp.throwable(this.request.service(), e));

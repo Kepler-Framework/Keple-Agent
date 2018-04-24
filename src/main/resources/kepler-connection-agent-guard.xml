@@ -4,17 +4,17 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<bean id="kepler.connection.delegate.guard" class="com.kepler.connection.delegate.guard.ChainedGuard">
+	<bean id="kepler.connection.agent.guard" class="com.kepler.connection.agent.guard.ChainedGuard">
 		<constructor-arg>
 			<util:list>
-				<ref bean="kepler.connection.delegate.guard.available" />
-				<ref bean="kepler.connection.delegate.guard.service" />
+				<ref bean="kepler.connection.agent.guard.method" />
+				<ref bean="kepler.connection.agent.guard.service" />
 			</util:list>
 		</constructor-arg>
 	</bean>
 
-	<bean id="kepler.connection.delegate.guard.service" class="com.kepler.connection.delegate.guard.ServiceGuard" />
+	<bean id="kepler.connection.agent.guard.method" class="com.kepler.connection.agent.guard.MethodGuard" />
 
-	<bean id="kepler.connection.delegate.guard.available" class="com.kepler.connection.delegate.guard.AvailableGuard" />
+	<bean id="kepler.connection.agent.guard.service" class="com.kepler.connection.agent.guard.ServiceGuard" />
 
 </beans>

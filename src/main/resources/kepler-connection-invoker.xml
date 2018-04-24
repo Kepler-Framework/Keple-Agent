@@ -4,9 +4,6 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<import resource="classpath:kepler-connection-delegate.xml" />
-	<import resource="classpath:kepler-connection-invoker.xml" />
-	<import resource="classpath:kepler-connection-agent.xml" />
-	<import resource="classpath:kepler-connection-json.xml" />
+	<bean class="com.kepler.connection.invoker.GenericProcessor" />
 
 </beans>

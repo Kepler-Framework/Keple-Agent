@@ -1,8 +1,6 @@
 package com.kepler.connection.agent;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 import com.kepler.service.Service;
 
@@ -12,17 +10,11 @@ import com.kepler.service.Service;
  */
 public interface Request {
 
-	public static final Map<String, Object> EMPTY_CONTENT = Collections.unmodifiableMap(new HashMap<String, Object>());
+	public LinkedHashMap<String, Object> body();
 
-	public static final String[] EMPTY_CLASSES = new String[] {};
+	public RequestHeaders headers();
 
-	public static final Object[] EMPTY_ARGS = new Object[] {};
+	public Service service();
 
-	public String[] classes() throws Exception;
-
-	public Service service() throws Exception;
-
-	public String method() throws Exception;
-
-	public Object[] args() throws Exception;
+	public String method();
 }

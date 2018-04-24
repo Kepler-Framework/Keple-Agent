@@ -24,7 +24,7 @@ import com.kepler.connection.ResponseStatus;
 import com.kepler.connection.agent.impl.DefaultAgent;
 import com.kepler.connection.delegate.DelegateGuard;
 import com.kepler.connection.delegate.DelegateHost;
-import com.kepler.connection.delegate.DelegateResp;
+import com.kepler.connection.delegate.DelegateResponse;
 import com.kepler.connection.delegate.DelegateServices;
 import com.kepler.connection.location.DelegateLocation;
 import com.kepler.connection.location.impl.ArgLocation;
@@ -101,7 +101,7 @@ public class Delegate implements Runnable {
 		for (String location : this.location.locations(this.host)) {
 			Delegate.LOGGER.info("[install][location=" + location + "]");
 			try (InputStream input = this.connection(location).getInputStream()) {
-				DelegateResp resp = this.mapper.readValue(input, DelegateResp.class);
+				DelegateResponse resp = this.mapper.readValue(input, DelegateResponse.class);
 				if (ResponseStatus.SUCCESS.code() == resp.getErrno() && this.guard.guard(location, resp.getData())) {
 					List<Service> services = new DelegateServices(resp.getData());
 					this.hosts.add(this.diffe.add(new DelegateHost(resp.getData()), services), services);

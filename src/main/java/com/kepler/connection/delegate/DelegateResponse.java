@@ -4,7 +4,7 @@ package com.kepler.connection.delegate;
  * @author KimShen
  *
  */
-public class DelegateResp {
+public class DelegateResponse {
 
 	private DelegateBody data;
 

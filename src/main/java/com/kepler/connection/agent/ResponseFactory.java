@@ -10,5 +10,7 @@ public interface ResponseFactory {
 
 	public Object response(Service service, Object resp) throws Exception;
 	
+	public Object throwable(Service service, String throwable) throws Exception;
+	
 	public Object throwable(Service service, Throwable throwable) throws Exception;
 }

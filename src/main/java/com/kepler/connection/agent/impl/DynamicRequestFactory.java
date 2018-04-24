@@ -34,6 +34,7 @@ public class DynamicRequestFactory implements RequestFactory, ApplicationContext
 
 	@Override
 	public void setApplicationContext(ApplicationContext context) throws BeansException {
+		// 加载处理器
 		String[] names = context.getBeanNamesForType(RequestProcessor.class);
 		if (names != null) {
 			for (String name : names) {
@@ -57,5 +58,4 @@ public class DynamicRequestFactory implements RequestFactory, ApplicationContext
 		}
 		return this.def.process(request);
 	}
-
 }

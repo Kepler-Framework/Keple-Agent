@@ -1,0 +1,16 @@
+{
+	"data": {
+		"root": "http://chaxun.cx580.com:9008/queryindex.aspx?service=${service}&version=${version}&catalog=${catalog}&method=${method}",
+		"services": [{
+			"path": "?userid=DDHLZC2018&userpwd=24A84BAEB8184E5AAE4A0D69D3AB108A&&&carnumber=${carnumber}&carcode=${carcode}&cardrivenumber=${cardrivenumber}&cartype=${cartype}"
+			"service": "find",
+			"version": "0.0.1",
+			"catalog": "rest-full",
+		},{
+			"service": "query",
+			"version": "0.0.1"
+		}]
+	},
+	"errmsg": "succ",
+	"errno": "0"
+}

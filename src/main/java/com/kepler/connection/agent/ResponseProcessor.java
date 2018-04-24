@@ -9,6 +9,8 @@ import com.kepler.service.Service;
 public interface ResponseProcessor {
 
 	public Object exception(Throwable throwable) throws Exception;
+	
+	public Object exception(String throwable) throws Exception;
 
 	public Object response(Object response) throws Exception;
 

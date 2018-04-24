@@ -66,6 +66,13 @@ public class DelegateInvoker implements Mocker {
 		return host.host() + "?service" + request.service().service() + "&method=" + request.method();
 	}
 
+	private HttpPost headers(Request request, HttpPost post) {
+		for (String key : request.headers().get().keySet()) {
+			post.addHeader(key, request.headers().get().get(key));
+		}
+		return post;
+	}
+
 	@Override
 	public Object mock(Request request) throws Exception {
 		try {
@@ -73,8 +80,8 @@ public class DelegateInvoker implements Mocker {
 			if (host == null) {
 				throw new KeplerRoutingException("None service for " + request.service());
 			}
-			HttpEntity entity = new StringEntity(DelegateInvoker.MAPPER.writeValueAsString(new DelegateRequest(request.headers(), request.args())), ContentType.APPLICATION_JSON);
-			HttpPost post = new HttpPost(this.url(request, host));
+			HttpEntity entity = new StringEntity(DelegateInvoker.MAPPER.writeValueAsString(request.args()), ContentType.APPLICATION_JSON);
+			HttpPost post = this.headers(request, new HttpPost(this.url(request, host)));
 			post.setConfig(this.config);
 			post.setEntity(entity);
 			try (CloseableHttpResponse response = this.client.execute(post)) {
