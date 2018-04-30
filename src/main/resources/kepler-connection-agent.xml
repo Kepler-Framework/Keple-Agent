@@ -4,6 +4,7 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
+	<import resource="kepler-connection-agent-invoker.xml" />
 	<import resource="kepler-connection-agent-factory.xml" />
 	<import resource="kepler-connection-agent-guard.xml" />
 

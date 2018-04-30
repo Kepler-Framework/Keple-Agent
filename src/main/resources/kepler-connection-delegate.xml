@@ -5,18 +5,22 @@
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
 	<import resource="kepler-connection-delegate-location.xml" />
+	<import resource="kepler-connection-delegate-request.xml" />
 	<import resource="kepler-connection-delegate-guard.xml" />
 
 	<bean id="kepler.connection.delegate" class="com.kepler.connection.delegate.impl.Delegate" init-method="init" destroy-method="destroy">
 		<constructor-arg ref="kepler.connection.delegate.guard" />
 		<constructor-arg ref="kepler.connection.delegate.hosts" />
 		<constructor-arg ref="kepler.connection.location" />
+		<constructor-arg ref="kepler.connection.json" />
 		<constructor-arg ref="kepler.host.local" />
 	</bean>
 
 	<bean id="kepler.connection.delegate.hosts" class="com.kepler.connection.delegate.impl.DelegateHosts" destroy-method="destroy">
+		<constructor-arg ref="kepler.connection.delegate.request" />
 		<constructor-arg ref="kepler.service.exported.context" />
 		<constructor-arg ref="kepler.service.exported.chained" />
+		<constructor-arg ref="kepler.connection.json" />
 		<constructor-arg ref="kepler.router.routings" />
 	</bean>
 

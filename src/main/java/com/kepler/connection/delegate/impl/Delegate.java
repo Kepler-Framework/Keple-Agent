@@ -3,12 +3,10 @@ package com.kepler.connection.delegate.impl;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -16,20 +14,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.kepler.config.PropertiesUtils;
-import com.kepler.connection.ResponseStatus;
 import com.kepler.connection.agent.impl.DefaultAgent;
 import com.kepler.connection.delegate.DelegateGuard;
-import com.kepler.connection.delegate.DelegateHost;
 import com.kepler.connection.delegate.DelegateResponse;
-import com.kepler.connection.delegate.DelegateServices;
+import com.kepler.connection.delegate.DelegateService;
+import com.kepler.connection.json.Json;
 import com.kepler.connection.location.DelegateLocation;
 import com.kepler.connection.location.impl.ArgLocation;
 import com.kepler.host.Host;
-import com.kepler.service.Service;
 
 /**
  * @author KimShen
@@ -53,11 +46,7 @@ public class Delegate implements Runnable {
 
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 
-	private final ObjectMapper mapper = new ObjectMapper();
-
-	private final Diffenence diffe = new Diffenence();
-
-	volatile private boolean running = false;
+	private final Difference difference = new Difference();
 
 	private final DelegateLocation location;
 
@@ -67,14 +56,17 @@ public class Delegate implements Runnable {
 
 	private final Host host;
 
-	public Delegate(DelegateLocation location, DelegateGuard guard, DelegateHosts hosts, Host host) {
+	private final Json json;
+
+	volatile private boolean running = false;
+
+	public Delegate(DelegateLocation location, DelegateGuard guard, DelegateHosts hosts, Host host, Json json) {
 		super();
-		this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		this.mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
 		this.location = location;
 		this.guard = guard;
 		this.hosts = hosts;
 		this.host = host;
+		this.json = json;
 	}
 
 	private HttpURLConnection connection(String location) throws Exception {
@@ -86,9 +78,9 @@ public class Delegate implements Runnable {
 
 	private Delegate uninstall() throws Exception {
 		try {
-			Map<Host, Set<Service>> services = this.diffe.diff();
+			Map<Host, Collection<DelegateService>> services = this.difference.diff();
 			for (Host host : services.keySet()) {
-				this.hosts.ban(host, new ArrayList<Service>(services.get(host)));
+				this.hosts.ban(host, services.get(host));
 			}
 			return this;
 		} catch (Exception e) {
@@ -101,11 +93,9 @@ public class Delegate implements Runnable {
 		for (String location : this.location.locations(this.host)) {
 			Delegate.LOGGER.info("[install][location=" + location + "]");
 			try (InputStream input = this.connection(location).getInputStream()) {
-				DelegateResponse resp = this.mapper.readValue(input, DelegateResponse.class);
-				if (ResponseStatus.SUCCESS.code() == resp.getErrno() && this.guard.guard(location, resp.getData())) {
-					List<Service> services = new DelegateServices(resp.getData());
-					this.hosts.add(this.diffe.add(new DelegateHost(resp.getData()), services), services);
-				}
+				DelegateResponse resp = this.guard.guard(location, this.json.read(input, DelegateResponse.class));
+				this.difference.add(resp.getData().getHost(), resp.getData().getServices());
+				this.hosts.add(resp.getData().getHost(), resp.getData().getServices());
 			} catch (Exception e) {
 				Delegate.LOGGER.error("[location=" + location + "][message=" + e.getMessage() + "]", e);
 			}
@@ -113,12 +103,12 @@ public class Delegate implements Runnable {
 		return this;
 	}
 
-	public void init() throws Exception {
-		this.executor.scheduleAtFixedRate(this, Delegate.DELAY, Delegate.INTERVAL, TimeUnit.MILLISECONDS);
-	}
-
 	public void destroy() throws Exception {
 		this.executor.shutdown();
+	}
+
+	public void init() throws Exception {
+		this.executor.scheduleAtFixedRate(this, Delegate.DELAY, Delegate.INTERVAL, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -132,35 +122,37 @@ public class Delegate implements Runnable {
 		} catch (Exception e) {
 			Delegate.LOGGER.error(e.getMessage(), e);
 		} finally {
-			this.hosts.finish();
+			this.hosts.exchange();
 			this.running = false;
 		}
 	}
 
-	private class Diffenence {
+	private class Difference {
 
-		private Map<Host, Set<Service>> curr = new HashMap<Host, Set<Service>>();
+		private Map<Host, Collection<DelegateService>> curr = new HashMap<Host, Collection<DelegateService>>();
 
-		private Map<Host, Set<Service>> prev = new HashMap<Host, Set<Service>>();
+		private Map<Host, Collection<DelegateService>> prev = new HashMap<Host, Collection<DelegateService>>();
 
-		public Host add(Host host, List<Service> services) {
-			Set<Service> pres = this.prev.get(host);
+		public Difference add(Host host, Collection<DelegateService> services) {
+			Collection<DelegateService> pres = this.prev.get(host);
 			if (pres != null) {
+				// 差集
 				pres.removeAll(services);
 			}
-			Set<Service> curs = this.curr.get(host);
+			Collection<DelegateService> curs = this.curr.get(host);
 			if (curs == null) {
-				this.curr.put(host, new HashSet<Service>(services));
+				this.curr.put(host, new HashSet<DelegateService>(services));
 			} else {
+				// 并集
 				curs.addAll(services);
 			}
-			return host;
+			return this;
 		}
 
-		public Map<Host, Set<Service>> diff() {
-			Map<Host, Set<Service>> diff = this.prev;
+		public Map<Host, Collection<DelegateService>> diff() {
+			Map<Host, Collection<DelegateService>> diff = this.prev;
 			this.prev = this.curr;
-			this.curr = new HashMap<Host, Set<Service>>();
+			this.curr = new HashMap<Host, Collection<DelegateService>>();
 			return diff;
 		}
 	}

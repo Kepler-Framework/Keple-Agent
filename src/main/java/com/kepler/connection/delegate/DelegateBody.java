@@ -3,6 +3,7 @@ package com.kepler.connection.delegate;
 import java.util.List;
 
 import com.kepler.host.Host;
+import com.kepler.host.impl.DefaultHost;
 
 /**
  * @author KimShen
@@ -53,5 +54,9 @@ public class DelegateBody {
 
 	public void setTag(String tag) {
 		this.tag = tag;
+	}
+
+	public Host getHost() {
+		return new DefaultHost(Host.LOCATION, Host.GROUP_DEF, Host.TOKEN_VAL, Host.NAME, this.getTag(), "", this.getRoot(), 0, Host.FEATURE, this.getPriority());
 	}
 }

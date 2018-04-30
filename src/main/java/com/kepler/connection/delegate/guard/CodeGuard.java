@@ -1,7 +1,7 @@
 package com.kepler.connection.delegate.guard;
 
-import java.util.List;
-
+import com.kepler.KeplerGenericException;
+import com.kepler.connection.ResponseStatus;
 import com.kepler.connection.delegate.DelegateGuard;
 import com.kepler.connection.delegate.DelegateResponse;
 
@@ -9,19 +9,12 @@ import com.kepler.connection.delegate.DelegateResponse;
  * @author KimShen
  *
  */
-public class ChainedGuard implements DelegateGuard {
-
-	private final List<DelegateGuard> guards;
-
-	public ChainedGuard(List<DelegateGuard> guards) {
-		super();
-		this.guards = guards;
-	}
+public class CodeGuard implements DelegateGuard {
 
 	@Override
 	public DelegateResponse guard(String location, DelegateResponse response) throws Exception {
-		for (DelegateGuard each : this.guards) {
-			each.guard(location, response);
+		if (ResponseStatus.SUCCESS.code() != response.getErrno()) {
+			throw new KeplerGenericException("[error-code][code=" + response.getErrno() + "]");
 		}
 		return response;
 	}

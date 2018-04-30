@@ -27,6 +27,10 @@ public class Json {
 		return output;
 	}
 
+	public String write(Object ob) throws Exception {
+		return Json.MAPPER.writeValueAsString(ob);
+	}
+
 	public <T> T read(InputStream input, Class<T> t) throws Exception {
 		return Json.MAPPER.readValue(input, t);
 	}

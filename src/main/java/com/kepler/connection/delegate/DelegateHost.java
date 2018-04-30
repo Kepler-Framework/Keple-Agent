@@ -7,14 +7,21 @@ import com.kepler.host.impl.DefaultHost;
  * @author KimShen
  *
  */
-public class DelegateHost extends DefaultHost {
+public class DelegateHost extends DefaultHost{
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	private final DelegateHttp http;
 
-	public DelegateHost(DelegateBody body) {
-		super(Host.LOCATION, Host.GROUP_DEF, Host.TOKEN_VAL, Host.NAME, body.getTag(), "", body.getRoot(), 0, Host.FEATURE, body.getPriority());
+	public DelegateHost(DelegateHttp http, Host host) {
+		super(host);
+		this.http = http;
+	}
+
+	public DelegateHttp http() {
+		return this.http;
 	}
 }

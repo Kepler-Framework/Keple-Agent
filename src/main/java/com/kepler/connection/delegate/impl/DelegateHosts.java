@@ -1,6 +1,7 @@
 package com.kepler.connection.delegate.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,12 +10,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.kepler.config.PropertiesUtils;
+import com.kepler.connection.delegate.DelegateHost;
+import com.kepler.connection.delegate.DelegateRequest;
+import com.kepler.connection.delegate.DelegateService;
+import com.kepler.connection.json.Json;
 import com.kepler.host.Host;
 import com.kepler.protocol.Request;
 import com.kepler.router.Routing;
 import com.kepler.router.routing.Routings;
 import com.kepler.service.Exported;
-import com.kepler.service.Service;
 import com.kepler.service.exported.ExportedServices;
 
 /**
@@ -27,85 +31,84 @@ public class DelegateHosts {
 
 	private static final Log LOGGER = LogFactory.getLog(DelegateHosts.class);
 
-	volatile private Map<Service, List<Host>> snapshot = new HashMap<Service, List<Host>>();
-
-	volatile private Map<Service, List<Host>> current = new HashMap<Service, List<Host>>();
-
 	private final ExportedServices context;
 
 	private final DelegateInvoker invoker;
-	
+
 	private final Exported exported;
 
 	private final Routings routings;
 
-	public DelegateHosts(ExportedServices context, Exported exported, Routings routings) {
+	volatile private Map<DelegateService, List<Host>> copy = new HashMap<DelegateService, List<Host>>();
+
+	volatile private Map<DelegateService, List<Host>> curr = new HashMap<DelegateService, List<Host>>();
+
+	public DelegateHosts(DelegateRequest request, ExportedServices context, Exported exported, Routings routings, Json json) {
 		super();
-		this.invoker = new DelegateInvoker(this);
+		this.invoker = new DelegateInvoker(this, request, json);
 		this.routings = routings;
 		this.exported = exported;
 		this.context = context;
 	}
 
-	public DelegateHosts add(Host host, List<Service> services) throws Exception {
-		for (Service service : services) {
+	public DelegateHosts add(Host host, Collection<DelegateService> services) throws Exception {
+		for (DelegateService service : services) {
 			// 发布服务
-			if (!this.context.services().containsKey(service)) {
-				this.exported.export(service, this.invoker);
+			if (!this.context.services().containsKey(service.target())) {
+				this.exported.export(service.target(), this.invoker);
 			}
-			List<Host> hosts = this.snapshot.get(service);
+			List<Host> hosts = this.copy.get(service);
 			if (hosts == null) {
-				this.snapshot.put(service, hosts = new ArrayList<Host>());
+				this.copy.put(service, hosts = new ArrayList<Host>());
 			}
-			if (!hosts.contains(host)) {
-				hosts.add(host);
+			DelegateHost h = new DelegateHost(service.getHttp(), host);
+			if (!hosts.contains(h)) {
+				hosts.add(h);
 			}
 		}
 		return this;
 	}
 
-	public DelegateHosts ban(Host host, List<Service> services) throws Exception {
-		if (services == null) {
-			return this;
-		}
-		for (Service service : services) {
-			List<Host> hosts = this.snapshot.get(service);
+	public DelegateHosts ban(Host host, Collection<DelegateService> services) throws Exception {
+		for (DelegateService service : services) {
+			List<Host> hosts = this.copy.get(service);
 			if (hosts == null) {
 				continue;
 			}
-			if (!hosts.contains(host)) {
+			DelegateHost h = new DelegateHost(service.getHttp(), host);
+			if (!hosts.contains(h)) {
 				continue;
 			}
-			hosts.remove(host);
-			DelegateHosts.LOGGER.info("[ban][service=" + service + "][host=" + host + "]");
+			hosts.remove(h);
+			DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "][host=" + h.host() + "]");
 			if (hosts.isEmpty()) {
 				if (this.context.services().containsKey(service)) {
-					this.exported.logout(service);
+					this.exported.logout(service.target());
 				}
-				DelegateHosts.LOGGER.info("[ban][service=" + service + "]");
+				this.copy.remove(service);
+				DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "]");
 			}
 		}
 		return this;
+	}
+
+	public DelegateHost host(Request request) {
+		Host host = this.routings.get(DelegateHosts.ROUTING).route(request, this.curr.get(new DelegateService(request.service())));
+		return host != null ? DelegateHost.class.cast(host) : null;
 	}
 
 	public void destroy() throws Exception {
 		this.invoker.destroy();
 	}
 
-	public Host host(Request request) {
-		return this.routings.get(DelegateHosts.ROUTING).route(request, this.current.get(request.service()));
+	public void exchange() {
+		Map<DelegateService, List<Host>> temp = this.curr;
+		this.curr = this.copy;
+		this.copy = temp;
 	}
 
-	public DelegateHosts prepare() {
-		this.snapshot.clear();
-		this.snapshot.putAll(this.current);
-		return this;
-	}
-
-	public DelegateHosts finish() {
-		Map<Service, List<Host>> temp = this.current;
-		this.current = this.snapshot;
-		this.snapshot = temp;
-		return this;
+	public void prepare() {
+		this.copy.clear();
+		this.copy.putAll(this.curr);
 	}
 }

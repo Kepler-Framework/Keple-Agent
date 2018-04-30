@@ -4,6 +4,6 @@
     http://www.springframework.org/schema/util
 	http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<bean class="com.kepler.connection.invoker.GenericProcessor" />
+	<bean class="com.kepler.connection.agent.invoker.GenericProcessor" />
 
 </beans>
