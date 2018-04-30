@@ -1,5 +1,7 @@
 package com.kepler.connection.delegate.request;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 
@@ -15,6 +17,8 @@ import com.kepler.protocol.Request;
  */
 public class DelegateGet extends DelegateBase implements DelegateRequest {
 
+	private static final Log LOGGER = LogFactory.getLog(DelegateGet.class);
+
 	public DelegateGet() {
 		super();
 	}
@@ -22,13 +26,14 @@ public class DelegateGet extends DelegateBase implements DelegateRequest {
 	protected String url(Request request, Host host) {
 		StringBuffer buffer = new StringBuffer(super.url(request, host));
 		GenericBean bean = GenericBean.class.cast(request.args()[0]);
-		if (bean == null) {
-			return buffer.toString();
+		if (bean != null) {
+			for (String key : bean.args().keySet()) {
+				buffer.append("&").append(key).append("=").append(bean.args().get(key).toString());
+			}
 		}
-		for (String key : bean.args().keySet()) {
-			buffer.append("&").append(key).append("=").append(bean.args().get(key).toString());
-		}
-		return buffer.toString();
+		String url = buffer.toString();
+		DelegateGet.LOGGER.debug(request.service() + "[method=" + request.method() + "][url=" + url + "]");
+		return url;
 	}
 
 	@Override

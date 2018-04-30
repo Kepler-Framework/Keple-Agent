@@ -82,7 +82,7 @@ public class DelegateHosts {
 			hosts.remove(h);
 			DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "][host=" + h.host() + "]");
 			if (hosts.isEmpty()) {
-				if (this.context.services().containsKey(service)) {
+				if (this.context.services().containsKey(service.target())) {
 					this.exported.logout(service.target());
 				}
 				this.copy.remove(service);

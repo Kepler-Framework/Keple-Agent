@@ -16,8 +16,8 @@ import org.apache.commons.logging.LogFactory;
 
 import com.kepler.config.PropertiesUtils;
 import com.kepler.connection.agent.impl.DefaultAgent;
+import com.kepler.connection.delegate.DelegateBody;
 import com.kepler.connection.delegate.DelegateGuard;
-import com.kepler.connection.delegate.DelegateResponse;
 import com.kepler.connection.delegate.DelegateService;
 import com.kepler.connection.json.Json;
 import com.kepler.connection.location.DelegateLocation;
@@ -93,9 +93,9 @@ public class Delegate implements Runnable {
 		for (String location : this.location.locations(this.host)) {
 			Delegate.LOGGER.info("[install][location=" + location + "]");
 			try (InputStream input = this.connection(location).getInputStream()) {
-				DelegateResponse resp = this.guard.guard(location, this.json.read(input, DelegateResponse.class));
-				this.difference.add(resp.getData().getHost(), resp.getData().getServices());
-				this.hosts.add(resp.getData().getHost(), resp.getData().getServices());
+				DelegateBody body = this.guard.guard(location, this.json.read(input, DelegateBody.class));
+				this.difference.add(body.getHost(), body.getServices());
+				this.hosts.add(body.getHost(), body.getServices());
 			} catch (Exception e) {
 				Delegate.LOGGER.error("[location=" + location + "][message=" + e.getMessage() + "]", e);
 			}

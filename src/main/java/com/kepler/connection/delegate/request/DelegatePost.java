@@ -1,5 +1,7 @@
 package com.kepler.connection.delegate.request;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -18,6 +20,8 @@ import com.kepler.protocol.Request;
  */
 public class DelegatePost extends DelegateBase implements DelegateRequest {
 
+	private static final Log LOGGER = LogFactory.getLog(DelegateGet.class);
+
 	private final Json json;
 
 	public DelegatePost(Json json) {
@@ -27,12 +31,15 @@ public class DelegatePost extends DelegateBase implements DelegateRequest {
 
 	@Override
 	public HttpUriRequest request(Request request, DelegateHost host) throws Exception {
-		HttpPost post = new HttpPost(super.url(request, host));
+		String url = super.url(request, host);
+		HttpPost post = new HttpPost(url);
 		post.setConfig(super.config());
 		super.headers(request, post);
 		GenericBean bean = GenericBean.class.cast(request.args()[0]);
 		if (bean != null) {
-			HttpEntity entity = new StringEntity(this.json.write(bean), ContentType.APPLICATION_JSON);
+			String body = this.json.write(bean);
+			DelegatePost.LOGGER.debug(request.service() + "[method=" + request.method() + "][url=" + url + "][body=" + body + "]");
+			HttpEntity entity = new StringEntity(body, ContentType.APPLICATION_JSON);
 			post.setEntity(entity);
 		}
 		return post;

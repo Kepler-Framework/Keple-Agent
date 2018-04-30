@@ -6,5 +6,5 @@ package com.kepler.connection.delegate;
  */
 public interface DelegateGuard {
 
-	public DelegateResponse guard(String location, DelegateResponse response) throws Exception;
+	public DelegateBody guard(String location, DelegateBody body) throws Exception;
 }

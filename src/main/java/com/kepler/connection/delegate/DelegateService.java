@@ -16,6 +16,8 @@ public class DelegateService {
 
 	private String version;
 
+	private String catalog;
+
 	public DelegateService() {
 		super();
 	}
@@ -24,16 +26,22 @@ public class DelegateService {
 		super();
 		this.service = service.service();
 		this.version = service.version();
+		this.catalog = service.catalog();
 	}
 
 	public DelegateService(String service, String version) {
+		this(service, version, null);
+	}
+
+	public DelegateService(String service, String version, String catalog) {
 		super();
 		this.service = service;
 		this.version = version;
+		this.catalog = catalog;
 	}
 
 	public Service target() {
-		return this.target != null ? this.target : (this.target = new Service(this.service, this.version));
+		return this.target != null ? this.target : (this.target = new Service(this.service, this.version, this.catalog));
 	}
 
 	public DelegateHttp getHttp() {
@@ -58,6 +66,14 @@ public class DelegateService {
 
 	public void setVersion(String version) {
 		this.version = version;
+	}
+
+	public String getCatalog() {
+		return this.catalog;
+	}
+
+	public void setCatalog(String catalog) {
+		this.catalog = catalog;
 	}
 
 	public int hashCode() {

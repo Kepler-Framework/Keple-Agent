@@ -7,14 +7,11 @@
 	<bean id="kepler.connection.delegate.guard" class="com.kepler.connection.delegate.guard.ChainedGuard">
 		<constructor-arg>
 			<util:list>
-				<ref bean="kepler.connection.delegate.guard.code" />
 				<ref bean="kepler.connection.delegate.guard.service" />
 				<ref bean="kepler.connection.delegate.guard.available" />
 			</util:list>
 		</constructor-arg>
 	</bean>
-
-	<bean id="kepler.connection.delegate.guard.code" class="com.kepler.connection.delegate.guard.CodeGuard" />
 
 	<bean id="kepler.connection.delegate.guard.service" class="com.kepler.connection.delegate.guard.ServiceGuard" />
 

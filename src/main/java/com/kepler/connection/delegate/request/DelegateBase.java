@@ -7,6 +7,7 @@ import com.kepler.config.PropertiesUtils;
 import com.kepler.connection.delegate.DelegateRequest;
 import com.kepler.host.Host;
 import com.kepler.protocol.Request;
+import com.kepler.service.Service;
 
 /**
  * @author KimShen
@@ -14,11 +15,19 @@ import com.kepler.protocol.Request;
  */
 abstract public class DelegateBase implements DelegateRequest {
 
-	private static final int TIMEOUT_SOCKET = PropertiesUtils.get(DelegatePost.class.getName().toLowerCase() + ".timeout_socket", 5000);
+	private static final String REPLACE_SERVICE = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".replace_service", "#\\{service\\}");
 
-	private static final int TIMEOUT_CONN = PropertiesUtils.get(DelegatePost.class.getName().toLowerCase() + ".timeout_conn", 5000);
+	private static final String REPLACE_VERSION = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".replace_version", "#\\{version\\}");
 
-	private static final int TIMEOUT_READ = PropertiesUtils.get(DelegatePost.class.getName().toLowerCase() + ".timeout_read", 5000);
+	private static final String REPLACE_CATALOG = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".replace_catalog", "#\\{catalog\\}");
+
+	private static final String REPLACE_METHOD = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".replace_method", "#\\{method\\}");
+
+	private static final int TIMEOUT_SOCKET = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_socket", 5000);
+
+	private static final int TIMEOUT_CONN = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_conn", 5000);
+
+	private static final int TIMEOUT_READ = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_read", 5000);
 
 	private final RequestConfig config;
 
@@ -35,7 +44,8 @@ abstract public class DelegateBase implements DelegateRequest {
 	}
 
 	protected String url(Request request, Host host) {
-		return host.host() + "?service=" + request.service().service() + "&method=" + request.method();
+		Service service = request.service();
+		return host.host().replaceAll(DelegateBase.REPLACE_SERVICE, service.service()).replaceAll(DelegateBase.REPLACE_VERSION, service.version()).replaceAll(DelegateBase.REPLACE_CATALOG, service.catalog()).replaceAll(DelegateBase.REPLACE_METHOD, request.method());
 	}
 
 	protected RequestConfig config() {
