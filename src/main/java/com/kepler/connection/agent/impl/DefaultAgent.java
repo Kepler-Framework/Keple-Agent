@@ -227,9 +227,6 @@ public class DefaultAgent {
 
 		private InvokeRunnable prepare() throws Exception {
 			try {
-				String cookie = this.req.headers().get(HttpHeaders.COOKIE);
-				// 权限检查
-				DefaultAgent.this.auth.auth(this.req.getUri(), this.req.getMethod().name(), StringUtils.isEmpty(cookie) ? DefaultAgent.EMPTY : ServerCookieDecoder.STRICT.decode(cookie), this.req.headers());
 				// 解析Request并准备Header
 				DefaultAgent.this.headers.get().put((this.request = DefaultAgent.this.resq.factory(this.req)).headers().headers());
 				this.buf = DefaultAgent.this.allocator.buffer();
@@ -268,6 +265,7 @@ public class DefaultAgent {
 
 		private void running() throws Exception {
 			try {
+				this.auth();
 				// 请求校验
 				DefaultAgent.this.guard.guard(this.request);
 				Object respones_process = DefaultAgent.this.resp.response(this.request.service(), this.generic());
@@ -280,6 +278,11 @@ public class DefaultAgent {
 				Object response = this.reset().response(DefaultAgent.this.resp.throwable(this.request.service(), e));
 				this.ctx.writeAndFlush(response).addListener(this.listener());
 			}
+		}
+
+		private void auth() throws Exception {
+			String cookie = this.req.headers().get(HttpHeaders.COOKIE);
+			DefaultAgent.this.auth.auth(this.req.getUri(), this.req.getMethod().name(), StringUtils.isEmpty(cookie) ? DefaultAgent.EMPTY : ServerCookieDecoder.STRICT.decode(cookie), this.req.headers());
 		}
 
 		@Override
