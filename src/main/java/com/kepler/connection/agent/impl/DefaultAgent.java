@@ -1,13 +1,18 @@
 package com.kepler.connection.agent.impl;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 
 import com.kepler.config.PropertiesUtils;
 import com.kepler.connection.agent.Request;
+import com.kepler.connection.agent.RequestAuth;
 import com.kepler.connection.agent.RequestFactory;
 import com.kepler.connection.agent.RequestGuard;
 import com.kepler.connection.agent.ResponseFactory;
@@ -42,6 +47,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.cookie.Cookie;
+import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.util.ReferenceCountUtil;
 
 /**
@@ -72,6 +79,8 @@ public class DefaultAgent {
 
 	private static final int PORT = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".port", 8080);
 
+	private static final Set<Cookie> EMPTY = Collections.unmodifiableSet(new HashSet<Cookie>());
+
 	private static final Log LOGGER = LogFactory.getLog(DefaultAgent.class);
 
 	private final ByteBufAllocator allocator = DefaultAgent.POOLED ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
@@ -94,9 +103,11 @@ public class DefaultAgent {
 
 	private final RequestGuard guard;
 
+	private final RequestAuth auth;
+
 	private final Json json;
 
-	public DefaultAgent(ThreadPoolExecutor executor, GenericService generic, HeadersContext headers, RequestGuard guard, ResponseFactory resp, RequestFactory resq, Json json) {
+	public DefaultAgent(ThreadPoolExecutor executor, GenericService generic, HeadersContext headers, RequestGuard guard, ResponseFactory resp, RequestFactory resq, RequestAuth auth, Json json) {
 		this.executor = executor;
 		this.generic = generic;
 		this.headers = headers;
@@ -104,6 +115,7 @@ public class DefaultAgent {
 		this.resp = resp;
 		this.resq = resq;
 		this.json = json;
+		this.auth = auth;
 	}
 
 	/**
@@ -215,6 +227,9 @@ public class DefaultAgent {
 
 		private InvokeRunnable prepare() throws Exception {
 			try {
+				String cookie = this.req.headers().get(HttpHeaders.COOKIE);
+				// 权限检查
+				DefaultAgent.this.auth.auth(this.req.getUri(), this.req.getMethod().name(), StringUtils.isEmpty(cookie) ? DefaultAgent.EMPTY : ServerCookieDecoder.STRICT.decode(cookie), this.req.headers());
 				// 解析Request并准备Header
 				DefaultAgent.this.headers.get().put((this.request = DefaultAgent.this.resq.factory(this.req)).headers().headers());
 				this.buf = DefaultAgent.this.allocator.buffer();

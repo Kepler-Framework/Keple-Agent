@@ -17,9 +17,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>commons-beanutils</groupId>
-			<artifactId>commons-beanutils</artifactId>
-			<version>1.9.3</version>
+			<groupId>com.kepler</groupId>
+			<artifactId>kepler-all</artifactId>
+			<version>0.0.12-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -27,9 +27,9 @@
 			<version>2.6</version>
 		</dependency>
 		<dependency>
-			<groupId>com.kepler</groupId>
-			<artifactId>kepler-all</artifactId>
-			<version>0.0.12-SNAPSHOT</version>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.9.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>

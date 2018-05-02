@@ -1,5 +1,7 @@
 package com.kepler.connection.delegate;
 
+import java.util.Map;
+
 import com.kepler.service.Service;
 
 /**
@@ -9,6 +11,8 @@ import com.kepler.service.Service;
 public class DelegateService {
 
 	private DelegateHttp http = DelegateHttp.GET;
+
+	private Map<String, String> mapping;
 
 	private Service target;
 
@@ -76,6 +80,14 @@ public class DelegateService {
 		this.catalog = catalog;
 	}
 
+	public Map<String, String> getMapping() {
+		return this.mapping;
+	}
+
+	public void setMapping(Map<String, String> mapping) {
+		this.mapping = mapping;
+	}
+
 	public int hashCode() {
 		return this.target().hashCode();
 	}
@@ -84,6 +96,7 @@ public class DelegateService {
 		if (ob == null) {
 			return false;
 		}
-		return DelegateService.class.cast(ob).target().equals(this.target());
+		DelegateService target = DelegateService.class.cast(ob);
+		return target.target().equals(this.target());
 	}
 }

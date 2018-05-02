@@ -15,6 +15,7 @@ import com.kepler.connection.delegate.DelegateHost;
 import com.kepler.connection.delegate.DelegateRequest;
 import com.kepler.connection.json.Json;
 import com.kepler.connection.location.impl.ArgLocation;
+import com.kepler.generic.reflect.impl.DelegateBean;
 import com.kepler.mock.Mocker;
 import com.kepler.protocol.Request;
 
@@ -53,6 +54,7 @@ public class DelegateInvoker implements Mocker {
 		this.client.close();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Object mock(Request request) throws Exception {
 		try {
@@ -61,7 +63,12 @@ public class DelegateInvoker implements Mocker {
 				throw new KeplerRoutingException("None service for " + request.service());
 			}
 			try (CloseableHttpResponse response = this.client.execute(this.request.request(request, host))) {
-				return this.json.read(response.getEntity().getContent(), Map.class);
+				Object resp = this.json.read(response.getEntity().getContent(), Map.class);
+				Map<String, String> mapping = host.mapping();
+				if (mapping == null) {
+					return resp;
+				}
+				return new DelegateBean(Map.class.cast(resp)).mapping(host.mapping()).args();
 			}
 		} catch (Throwable e) {
 			DelegateInvoker.LOGGER.error(e.getMessage(), e);

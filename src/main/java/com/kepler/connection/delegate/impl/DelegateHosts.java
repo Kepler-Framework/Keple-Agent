@@ -61,33 +61,39 @@ public class DelegateHosts {
 			if (hosts == null) {
 				this.copy.put(service, hosts = new ArrayList<Host>());
 			}
-			DelegateHost h = new DelegateHost(service.getHttp(), host);
-			if (!hosts.contains(h)) {
-				hosts.add(h);
-			}
+			DelegateHost h = new DelegateHost(service.getMapping(), service.getHttp(), host);
+			hosts.remove(h.reverse());
+			// Replace Mapping
+			hosts.remove(h);
+			hosts.add(h);
 		}
 		return this;
 	}
 
 	public DelegateHosts ban(Host host, Collection<DelegateService> services) throws Exception {
 		for (DelegateService service : services) {
-			List<Host> hosts = this.copy.get(service);
-			if (hosts == null) {
-				continue;
+			this.ban(host, service);
+		}
+		return this;
+	}
+
+	public DelegateHosts ban(Host host, DelegateService service) throws Exception {
+		List<Host> hosts = this.copy.get(service);
+		if (hosts == null) {
+			return this;
+		}
+		DelegateHost h = DelegateHost.class.isAssignableFrom(host.getClass()) ? DelegateHost.class.cast(host) : new DelegateHost(service.getMapping(), service.getHttp(), host);
+		if (!hosts.contains(h)) {
+			return this;
+		}
+		hosts.remove(h);
+		DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "][host=" + h.host() + "]");
+		if (hosts.isEmpty()) {
+			if (this.context.services().containsKey(service.target())) {
+				this.exported.logout(service.target());
 			}
-			DelegateHost h = new DelegateHost(service.getHttp(), host);
-			if (!hosts.contains(h)) {
-				continue;
-			}
-			hosts.remove(h);
-			DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "][host=" + h.host() + "]");
-			if (hosts.isEmpty()) {
-				if (this.context.services().containsKey(service.target())) {
-					this.exported.logout(service.target());
-				}
-				this.copy.remove(service);
-				DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "]");
-			}
+			this.copy.remove(service);
+			DelegateHosts.LOGGER.info("[ban][service=" + service.target() + "]");
 		}
 		return this;
 	}

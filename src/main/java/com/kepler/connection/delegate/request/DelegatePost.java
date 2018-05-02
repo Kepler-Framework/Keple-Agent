@@ -2,7 +2,6 @@ package com.kepler.connection.delegate.request;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
@@ -39,8 +38,7 @@ public class DelegatePost extends DelegateBase implements DelegateRequest {
 		if (bean != null) {
 			String body = this.json.write(bean);
 			DelegatePost.LOGGER.debug(request.service() + "[method=" + request.method() + "][url=" + url + "][body=" + body + "]");
-			HttpEntity entity = new StringEntity(body, ContentType.APPLICATION_JSON);
-			post.setEntity(entity);
+			post.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
 		}
 		return post;
 	}

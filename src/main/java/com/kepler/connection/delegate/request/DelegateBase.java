@@ -1,7 +1,11 @@
 package com.kepler.connection.delegate.request;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.springframework.http.HttpHeaders;
 
 import com.kepler.config.PropertiesUtils;
 import com.kepler.connection.delegate.DelegateRequest;
@@ -23,22 +27,28 @@ abstract public class DelegateBase implements DelegateRequest {
 
 	private static final String REPLACE_METHOD = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".replace_method", "#\\{method\\}");
 
-	private static final int TIMEOUT_SOCKET = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_socket", 5000);
+	private static final int TIMEOUT_SOCKET = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_socket", 30000);
 
-	private static final int TIMEOUT_CONN = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_conn", 5000);
+	private static final int TIMEOUT_CONN = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_conn", 30000);
 
-	private static final int TIMEOUT_READ = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_read", 5000);
+	private static final int TIMEOUT_READ = PropertiesUtils.get(DelegateBase.class.getName().toLowerCase() + ".timeout_read", 30000);
+
+	private final Set<String> blacklist = new HashSet<String>();
 
 	private final RequestConfig config;
 
 	public DelegateBase() {
 		super();
+		this.blacklist.add(HttpHeaders.CONTENT_TYPE.toLowerCase());
+		this.blacklist.add(HttpHeaders.CONTENT_LENGTH.toLowerCase());
 		this.config = RequestConfig.custom().setConnectTimeout(DelegateBase.TIMEOUT_CONN).setConnectionRequestTimeout(DelegateBase.TIMEOUT_READ).setSocketTimeout(DelegateBase.TIMEOUT_SOCKET).build();
 	}
 
 	protected HttpUriRequest headers(Request request, HttpUriRequest req) {
 		for (String key : request.headers().get().keySet()) {
-			req.addHeader(key, request.headers().get().get(key));
+			if (!this.blacklist.contains(key.toLowerCase())) {
+				req.addHeader(key, request.headers().get().get(key));
+			}
 		}
 		return req;
 	}
