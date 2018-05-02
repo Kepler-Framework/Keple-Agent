@@ -1,11 +1,16 @@
 package com.kepler.connection.agent.impl;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedHashMap;
+import java.util.List;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 
 import com.kepler.connection.agent.Request;
+import com.kepler.connection.agent.RequestParser;
 import com.kepler.connection.agent.RequestProcessor;
-import com.kepler.connection.json.Json;
 import com.kepler.connection.stream.WrapInputStream;
 
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -16,19 +21,33 @@ import io.netty.handler.codec.http.FullHttpRequest;
  */
 public class DefaultRequestProcessor implements RequestProcessor {
 
-	private final Json json;
+	private final List<RequestParser> parser;
 
-	public DefaultRequestProcessor(Json json) {
+	private final RequestParser def;
+
+	public DefaultRequestProcessor(List<RequestParser> parser, RequestParser def) {
 		super();
-		this.json = json;
+		this.parser = parser;
+		this.def = def;
+	}
+
+	private LinkedHashMap<String, Object> content(WrapInputStream input, String type) throws IOException, Exception {
+		if (input.available() <= 0) {
+			return null;
+		}
+		for (RequestParser each : this.parser) {
+			if (each.support(type)) {
+				return each.parse(input);
+			}
+		}
+		return this.def.parse(input);
 	}
 
 	@Override
 	public Request process(FullHttpRequest request) throws Exception {
 		try (WrapInputStream input = new WrapInputStream(request.content())) {
-			@SuppressWarnings("unchecked")
-			LinkedHashMap<String, Object> content = input.available() > 0 ? DefaultRequestProcessor.this.json.read(input, LinkedHashMap.class) : null;
-			return new DefaultRequest(new DefaultHeaders(request.headers()), new DefaultQuery(new URI(request.getUri())), content);
+			String content_type = request.headers().get(HttpHeaders.CONTENT_TYPE);
+			return new DefaultRequest(new DefaultHeaders(request.headers()), new DefaultQuery(new URI(request.getUri())), this.content(input, StringUtils.isEmpty(content_type) ? "" : content_type));
 		}
 	}
 

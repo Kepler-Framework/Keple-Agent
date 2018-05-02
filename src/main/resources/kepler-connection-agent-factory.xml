@@ -9,7 +9,8 @@
 	<alias name="kepler.connection.agent.response.dynamic" alias="kepler.connection.agent.response" />
 
 	<bean id="kepler.connection.agent.request.def" class="com.kepler.connection.agent.impl.DefaultRequestProcessor">
-		<constructor-arg ref="kepler.connection.json" />
+		<constructor-arg ref="kepler.connection.agent.parser.json" />
+		<constructor-arg ref="kepler.connection.agent.parser" />
 	</bean>
 
 	<bean id="kepler.connection.agent.response.def" class="com.kepler.connection.agent.impl.DefaultResponseProcessor" />

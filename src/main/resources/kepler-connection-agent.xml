@@ -6,6 +6,7 @@
 
 	<import resource="kepler-connection-agent-invoker.xml" />
 	<import resource="kepler-connection-agent-factory.xml" />
+	<import resource="kepler-connection-agent-parser.xml" />
 	<import resource="kepler-connection-agent-guard.xml" />
 	<import resource="kepler-connection-agent-auth.xml" />
 
