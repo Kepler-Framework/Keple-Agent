@@ -36,8 +36,13 @@ public class DefaultRequest implements Request {
 		super();
 		this.headers = headers;
 		this.body = query.merge(body);
-		this.method = query.path(2, "");
-		this.service = new Service(query.path(0, ""), query.path(1, ""), headers.headers().get(DefaultRequest.FIELD_CATALOG));
+		if (query.length() <= 3) {
+			this.method = query.path(1, "");
+			this.service = new Service(query.path(0, ""), "", headers.headers().get(DefaultRequest.FIELD_CATALOG));
+		} else {
+			this.method = query.path(2, "");
+			this.service = new Service(query.path(0, ""), query.path(1, ""), headers.headers().get(DefaultRequest.FIELD_CATALOG));
+		}
 	}
 
 	public LinkedHashMap<String, Object> body() {

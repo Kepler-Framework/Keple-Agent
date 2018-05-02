@@ -93,4 +93,8 @@ public class DefaultQuery implements RequestQuery {
 	public String path(int index) {
 		return this.path(index, null);
 	}
+
+	public int length() {
+		return this.path.length;
+	}
 }

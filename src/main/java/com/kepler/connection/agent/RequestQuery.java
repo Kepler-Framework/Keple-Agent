@@ -13,4 +13,6 @@ public interface RequestQuery {
 	public String path(int index, String def);
 
 	public String path(int index);
+
+	public int length();
 }

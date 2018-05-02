@@ -21,9 +21,6 @@ public class ServiceGuard implements RequestGuard {
 		if (StringUtils.isEmpty(service.service())) {
 			throw new KeplerGenericException("[guard-service][service]");
 		}
-		if (StringUtils.isEmpty(service.version())) {
-			throw new KeplerGenericException("[guard-service][version]");
-		}
 	}
 
 }
