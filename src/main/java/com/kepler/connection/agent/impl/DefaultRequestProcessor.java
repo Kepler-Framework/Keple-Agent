@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import com.kepler.connection.agent.Request;
 import com.kepler.connection.agent.RequestParser;
 import com.kepler.connection.agent.RequestProcessor;
+import com.kepler.connection.agent.RequestURI;
 import com.kepler.connection.stream.WrapInputStream;
 
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -25,10 +26,13 @@ public class DefaultRequestProcessor implements RequestProcessor {
 
 	private final RequestParser def;
 
-	public DefaultRequestProcessor(List<RequestParser> parser, RequestParser def) {
+	private final RequestURI uri;
+
+	public DefaultRequestProcessor(List<RequestParser> parser, RequestParser def, RequestURI uri) {
 		super();
 		this.parser = parser;
 		this.def = def;
+		this.uri = uri;
 	}
 
 	private LinkedHashMap<String, Object> content(WrapInputStream input, String type) throws IOException, Exception {
@@ -47,7 +51,7 @@ public class DefaultRequestProcessor implements RequestProcessor {
 	public Request process(FullHttpRequest request) throws Exception {
 		try (WrapInputStream input = new WrapInputStream(request.content())) {
 			String content_type = request.headers().get(HttpHeaders.CONTENT_TYPE);
-			return new DefaultRequest(new DefaultHeaders(request.headers()), new DefaultQuery(new URI(request.getUri())), this.content(input, StringUtils.isEmpty(content_type) ? "" : content_type));
+			return new DefaultRequest(new DefaultHeaders(request.headers()), new DefaultQuery(this.uri.uri(new URI(request.getUri()))), this.content(input, StringUtils.isEmpty(content_type) ? "" : content_type));
 		}
 	}
 

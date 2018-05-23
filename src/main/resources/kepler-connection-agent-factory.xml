@@ -11,6 +11,7 @@
 	<bean id="kepler.connection.agent.request.def" class="com.kepler.connection.agent.impl.DefaultRequestProcessor">
 		<constructor-arg ref="kepler.connection.agent.parser.json" />
 		<constructor-arg ref="kepler.connection.agent.parser" />
+		<constructor-arg ref="kepler.connection.agent.uri" />
 	</bean>
 
 	<bean id="kepler.connection.agent.response.def" class="com.kepler.connection.agent.impl.DefaultResponseProcessor" />

@@ -9,6 +9,7 @@
 	<import resource="kepler-connection-agent-parser.xml" />
 	<import resource="kepler-connection-agent-guard.xml" />
 	<import resource="kepler-connection-agent-auth.xml" />
+	<import resource="kepler-connection-agent-uri.xml" />
 
 	<bean id="kepler.connection.agent" class="com.kepler.connection.agent.impl.DefaultAgent" init-method="init" destroy-method="destroy">
 		<constructor-arg ref="kepler.connection.agent.response" />
