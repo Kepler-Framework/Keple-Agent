@@ -1,6 +1,8 @@
 package com.kepler.connection.agent.uri;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,7 +20,7 @@ public class ChainedURI implements RequestURI, ApplicationContextAware {
 
 	private static final Log LOGGER = LogFactory.getLog(ChainedURI.class);
 
-	private RequestURI uri = null;
+	private List<RequestURI> uri = new ArrayList<RequestURI>();
 
 	@Override
 	public void setApplicationContext(ApplicationContext context) throws BeansException {
@@ -27,7 +29,10 @@ public class ChainedURI implements RequestURI, ApplicationContextAware {
 		if (names != null) {
 			for (String name : names) {
 				try {
-					this.uri = context.getBean(name, RequestURI.class);
+					RequestURI uri = context.getBean(name, RequestURI.class);
+					if (!uri.equals(this)) {
+						this.uri.add(uri);
+					}
 				} catch (Exception e) {
 					ChainedURI.LOGGER.error(e.getMessage(), e);
 				}
@@ -37,6 +42,10 @@ public class ChainedURI implements RequestURI, ApplicationContextAware {
 
 	@Override
 	public URI uri(URI uri) {
-		return this.uri != null ? this.uri.uri(uri) : uri;
+		URI curr = uri;
+		for (RequestURI each : this.uri) {
+			curr = each.uri(curr);
+		}
+		return curr;
 	}
 }
