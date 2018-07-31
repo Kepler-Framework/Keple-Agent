@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -39,32 +38,28 @@ public class DefaultQuery implements RequestQuery {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private static void put(LinkedHashMap<String, Object> param, String key, String value) throws Exception {
 		if (!key.contains(".")) {
 			param.put(key, value);
 			return;
 		}
 		try {
-			// 当前取值路径
-			StringBuffer path = new StringBuffer();
 			String[] key_each = key.split("\\.");
+			Map<String, Object> current = null;
 			for (int index = 0; index < key_each.length - 1; index++) {
 				// Root Path
 				String each = key_each[index];
-				if (path.length() == 0) {
+				if (index == 0) {
 					if (!param.containsKey(each)) {
-						param.put(each, new HashMap<String, Object>());
+						param.put(each, current = new HashMap<String, Object>());
 					}
 				} else {
-					Map<String, Object> inner = Map.class.cast(PropertyUtils.getProperty(param, path.toString()));
-					if (!inner.containsKey(each)) {
-						inner.put(each, new HashMap<String, Object>());
+					if (!current.containsKey(each)) {
+						current.put(each, new HashMap<String, Object>());
 					}
 				}
-				path.append(path.length() == 0 ? each : path.toString() + each);
 			}
-			PropertyUtils.setProperty(param, key, value);
+			current.put(key_each[key_each.length - 1], value);
 		} catch (Exception e) {
 			DefaultQuery.LOGGER.info("[query-error][key=" + key + "][message=" + e.getMessage() + "]", e);
 		}
