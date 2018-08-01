@@ -1,6 +1,7 @@
 package com.kepler.connection.agent.impl;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,8 +31,12 @@ public class DefaultQuery implements RequestQuery {
 		if (!StringUtils.isEmpty(uri.getQuery())) {
 			this.param = new LinkedHashMap<String, Object>();
 			for (String each : uri.getQuery().split("&")) {
-				String[] pair = each.split("=");
-				DefaultQuery.put(this.param, pair[0], pair.length != 1 ? pair[1] : null);
+				int index = each.indexOf("=");
+				if (index == -1) {
+					DefaultQuery.put(this.param, each, null);
+				} else {
+					DefaultQuery.put(this.param, each.substring(0, index), URLDecoder.decode(each.substring(index + 1), "UTF-8"));
+				}
 			}
 		} else {
 			this.param = null;
