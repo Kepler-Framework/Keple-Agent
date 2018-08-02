@@ -43,6 +43,7 @@ public class DefaultQuery implements RequestQuery {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static void put(LinkedHashMap<String, Object> param, String key, String value) throws Exception {
 		if (!key.contains(".")) {
 			param.put(key, value);
@@ -57,6 +58,8 @@ public class DefaultQuery implements RequestQuery {
 				if (index == 0) {
 					if (!param.containsKey(each)) {
 						param.put(each, current = new HashMap<String, Object>());
+					} else {
+						current = Map.class.cast(param.get(each));
 					}
 				} else {
 					if (!current.containsKey(each)) {
