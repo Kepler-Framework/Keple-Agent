@@ -35,7 +35,8 @@ public class DefaultQuery implements RequestQuery {
 				if (index == -1) {
 					DefaultQuery.put(this.param, each, null);
 				} else {
-					DefaultQuery.put(this.param, each.substring(0, index), URLDecoder.decode(each.substring(index + 1), "UTF-8"));
+                    String val = URLDecoder.decode(each.substring(index + 1), "UTF-8");
+                    DefaultQuery.put(this.param, each.substring(0, index), "".equals(val) ? null : val);
 				}
 			}
 		} else {
