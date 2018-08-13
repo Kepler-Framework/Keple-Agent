@@ -57,9 +57,9 @@ import io.netty.util.ReferenceCountUtil;
  */
 public class DefaultAgent {
 
-	private static final int EVENTLOOP_CHILD = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".eventloop_child", Runtime.getRuntime().availableProcessors() * 2);
+	private static final int EVENTLOOP_PARENT = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".eventloop_parent", Runtime.getRuntime().availableProcessors() * 2);
 
-	private static final int EVENTLOOP_PARENT = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".eventloop_parent", 1);
+	private static final int EVENTLOOP_CHILD = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".eventloop_child", Runtime.getRuntime().availableProcessors() * 10);
 
 	private static final int BUFFER_SEND = PropertiesUtils.get(DefaultAgent.class.getName().toLowerCase() + ".buffer_send", Integer.MAX_VALUE);
 
@@ -229,7 +229,7 @@ public class DefaultAgent {
 			try {
 				// 解析Request并准备Header
 				DefaultAgent.this.headers.get().put((this.request = DefaultAgent.this.resq.factory(this.req)).headers().headers());
-				this.buf = DefaultAgent.this.allocator.buffer();
+				this.buf = DefaultAgent.this.allocator.directBuffer();
 				return this;
 			} catch (Exception e) {
 				DefaultAgent.LOGGER.error(e.getMessage(), e);
