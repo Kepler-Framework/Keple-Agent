@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.kepler.config.PropertiesUtils;
 import com.kepler.generic.reflect.GenericBean;
+import com.kepler.generic.reflect.impl.DefaultDelegate;
 import com.kepler.generic.reflect.impl.DelegateArgs;
 import com.kepler.host.Host;
 import com.kepler.invoker.InvokerProcessor;
@@ -24,14 +25,20 @@ public class GenericProcessor implements InvokerProcessor {
 
 	@Override
 	public Request before(Request request, Host host) {
-		if (host.feature() >= GenericProcessor.FEATHRE_VERSION) {
+		// 常规请求
+		if (!DefaultDelegate.DELEGATE_VAL.equals(request.headers().get(DefaultDelegate.DELEGATE_KEY))) {
 			return request;
 		}
-		if (GenericProcessor.WARN) {
-			GenericProcessor.LOGGER.info("[host=" + host.address() + "][feature=" + host.feature() + "]");
+		// 版本兼容的服务端
+		if (host.feature() >= GenericProcessor.FEATHRE_VERSION) {
+			return request;
+		} else {
+			// 版本冲突的服务端
+			if (GenericProcessor.WARN) {
+				GenericProcessor.LOGGER.info("[host=" + host.address() + "][feature=" + host.feature() + "]");
+			}
+			request.args()[0] = new DelegateArgs(GenericBean.class.cast(request.args()[0]));
+			return request;
 		}
-		request.args()[0] = new DelegateArgs(GenericBean.class.cast(request.args()[0]));
-		return request;
 	}
-
 }
