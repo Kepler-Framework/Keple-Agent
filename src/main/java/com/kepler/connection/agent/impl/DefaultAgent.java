@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
 
 import com.kepler.config.PropertiesUtils;
+import com.kepler.connection.ResponseListener;
 import com.kepler.connection.agent.Request;
 import com.kepler.connection.agent.RequestAuth;
 import com.kepler.connection.agent.RequestFactory;
@@ -22,7 +23,6 @@ import com.kepler.connection.json.Json;
 import com.kepler.connection.stream.WrapOutputStream;
 import com.kepler.generic.reflect.GenericService;
 import com.kepler.header.HeadersContext;
-import com.kepler.header.impl.TraceContext;
 import com.kepler.service.Service;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -202,12 +202,19 @@ public class DefaultAgent {
 
 		private Request request;
 
-		private ByteBuf buf;
+		private ByteBuf buffer;
+
+		private long running;
+
+		private long created;
+
+		private long remote;
 
 		private InvokeRunnable(ChannelHandlerContext ctx, FullHttpRequest req) {
 			super();
 			this.req = req;
 			this.ctx = ctx;
+			this.created = System.currentTimeMillis();
 		}
 
 		/**
@@ -216,11 +223,12 @@ public class DefaultAgent {
 		 * @throws Exception
 		 */
 		private FullHttpResponse response(Object response) throws Exception {
-			try (WrapOutputStream output = WrapOutputStream.class.cast(DefaultAgent.this.json.write(new WrapOutputStream(this.buf), response))) {
+			try (WrapOutputStream output = WrapOutputStream.class.cast(DefaultAgent.this.json.write(new WrapOutputStream(this.buffer), response))) {
 				DefaultFullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, output.buffer());
 				res.headers().add(HttpHeaders.CONTENT_LENGTH, output.buffer().readableBytes());
 				res.headers().add(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8");
 				res.headers().add(HttpHeaders.CONNECTION, "keep-alive");
+				this.remote = System.currentTimeMillis();
 				return res;
 			}
 		}
@@ -229,7 +237,8 @@ public class DefaultAgent {
 			try {
 				// 解析Request并准备Header
 				DefaultAgent.this.headers.get().put((this.request = DefaultAgent.this.resq.factory(this.req)).headers().headers());
-				this.buf = DefaultAgent.this.allocator.directBuffer();
+				this.buffer = DefaultAgent.this.allocator.directBuffer();
+				this.running = System.currentTimeMillis();
 				return this;
 			} catch (Exception e) {
 				DefaultAgent.LOGGER.error(e.getMessage(), e);
@@ -243,23 +252,23 @@ public class DefaultAgent {
 			return DefaultAgent.this.generic.invoke(service, method, this.request.body());
 		}
 
-		private ExceptionListener listener() {
-			return ExceptionListener.listener(this.ctx, TraceContext.getTraceOnCreate());
+		private ResponseListener listener() {
+			return new ResponseListener(this.req.getUri(), this.created, this.running, this.remote);
 		}
 
 		private InvokeRunnable release() {
-			if (this.buf == null) {
+			if (this.buffer == null) {
 				return this;
 			}
 			// 异常, 释放ByteBuf
-			if (this.buf.refCnt() > 0) {
-				ReferenceCountUtil.release(this.buf);
+			if (this.buffer.refCnt() > 0) {
+				ReferenceCountUtil.release(this.buffer);
 			}
 			return this;
 		}
 
 		private InvokeRunnable reset() {
-			this.buf.writerIndex(0);
+			this.buffer.writerIndex(0);
 			return this;
 		}
 
