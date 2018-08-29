@@ -1,7 +1,7 @@
 package com.kepler.connection.agent.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.kepler.KeplerCodeException;
+import com.kepler.KeplerExceptionCodable;
 import com.kepler.connection.ResponseStatus;
 
 /**
@@ -24,16 +24,8 @@ public class DefaultResponse {
 		this.data = null;
 		this.trace = trace;
 		this.errmsg = exception.getMessage();
-		this.errno = ResponseStatus.FAILED.code();
+        this.errno = exception instanceof KeplerExceptionCodable ? ((KeplerExceptionCodable) exception).getCode() : ResponseStatus.FAILED.code();
 	}
-	
-    public DefaultResponse(KeplerCodeException exception, String trace) {
-        super();
-        this.data = null;
-        this.trace = trace;
-        this.errmsg = exception.getMessage();
-        this.errno = exception.getCode();
-    }
 
 	public DefaultResponse(String exception, String trace) {
 		super();

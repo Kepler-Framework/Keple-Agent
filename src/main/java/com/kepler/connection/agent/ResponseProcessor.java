@@ -1,6 +1,5 @@
 package com.kepler.connection.agent;
 
-import com.kepler.KeplerCodeException;
 import com.kepler.service.Service;
 
 /**
@@ -10,8 +9,6 @@ import com.kepler.service.Service;
 public interface ResponseProcessor {
 
 	public Object exception(Throwable throwable) throws Exception;
-	
-	public Object exception(KeplerCodeException throwable) throws Exception;
 
 	public Object exception(String throwable) throws Exception;
 

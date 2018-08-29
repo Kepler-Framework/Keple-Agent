@@ -1,6 +1,5 @@
 package com.kepler.connection.agent.impl;
 
-import com.kepler.KeplerCodeException;
 import com.kepler.connection.agent.ResponseProcessor;
 import com.kepler.header.impl.TraceContext;
 import com.kepler.service.Service;
@@ -14,11 +13,6 @@ public class DefaultResponseProcessor implements ResponseProcessor {
 	public Object exception(Throwable throwable) throws Exception {
 		return new DefaultResponse(throwable, TraceContext.getTraceOnCreate());
 	}
-
-    @Override
-    public Object exception(KeplerCodeException throwable) throws Exception {
-        return new DefaultResponse(throwable, TraceContext.getTraceOnCreate());
-    }
 
 	public Object exception(String throwable) throws Exception {
 		return new DefaultResponse(throwable, TraceContext.getTraceOnCreate());
