@@ -17,7 +17,7 @@
 		<dependency>
 			<groupId>com.kepler</groupId>
 			<artifactId>kepler-all</artifactId>
-			<version>0.0.12-SNAPSHOT</version>
+			<version>0.0.13-SNAPSHOT</version>
 		</dependency>
 		<!-- For JSON -->
 		<dependency>
